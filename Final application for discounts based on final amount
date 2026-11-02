@@ -1,0 +1,21 @@
+Private Sub btnCalculateDiscount_Click(sender As Object, e As EventArgs) Handles btnCalculateDiscount.Click
+
+    Dim originalPrice As Double
+    Dim discountPercent As Double
+    Dim discountAmount As Double
+    Dim finalPrice As Double
+
+    If Double.TryParse(txtPrice.Text, originalPrice) AndAlso
+       Double.TryParse(txtDiscount.Text, discountPercent) Then
+
+        discountAmount = originalPrice * (discountPercent / 100)
+        finalPrice = originalPrice - discountAmount
+
+        lblDiscountAmount.Text = discountAmount.ToString("C")
+        lblFinalPrice.Text = finalPrice.ToString("C")
+
+    Else
+        MessageBox.Show("Please enter valid numbers.")
+    End If
+
+End Sub
