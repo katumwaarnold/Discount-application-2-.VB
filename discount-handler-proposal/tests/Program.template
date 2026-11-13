@@ -1,0 +1,74 @@
+Imports System
+Imports System.Globalization
+
+Public Class SimText
+    Public Property Text As String = ""
+End Class
+Public Class SimButton
+    Public Event Click As EventHandler
+    Public Sub PerformClick()
+        RaiseEvent Click(Me, EventArgs.Empty)
+    End Sub
+End Class
+Public Module MessageBox
+    Public LastMessage As String = ""
+    Public Sub Show(value As String)
+        LastMessage = value
+    End Sub
+End Module
+Public Class TestForm
+    Public txtPrice As New SimText()
+    Public txtDiscount As New SimText()
+    Public lblDiscountAmount As New SimText()
+    Public lblFinalPrice As New SimText()
+    Public WithEvents btnCalculateDiscount As New SimButton()
+__HANDLER__
+End Class
+Module Program
+    Private passed As Integer = 0
+    Private failed As Integer = 0
+    Private Sub Check(name As String, cultureName As String, price As String, percent As String, expectedDiscount As String, expectedFinal As String, expectedMessagePart As String)
+        CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(cultureName)
+        Dim f As New TestForm()
+        f.lblDiscountAmount.Text = "old discount"
+        f.lblFinalPrice.Text = "old final"
+        f.txtPrice.Text = price
+        f.txtDiscount.Text = percent
+        MessageBox.LastMessage = ""
+        f.btnCalculateDiscount.PerformClick()
+        Dim ok As Boolean = f.lblDiscountAmount.Text = expectedDiscount AndAlso f.lblFinalPrice.Text = expectedFinal AndAlso If(expectedMessagePart = "", MessageBox.LastMessage = "", MessageBox.LastMessage.Contains(expectedMessagePart))
+        If ok Then
+            passed += 1
+            Console.WriteLine("PASS " & name)
+        Else
+            failed += 1
+            Console.WriteLine("FAIL " & name & " discount=[" & f.lblDiscountAmount.Text & "] final=[" & f.lblFinalPrice.Text & "] message=[" & MessageBox.LastMessage & "]")
+        End If
+    End Sub
+    Sub Main()
+        Check("ordinary", "en-US", "100", "20", "$20.00", "$80.00", "")
+        Check("zero percent", "en-US", "100", "0", "$0.00", "$100.00", "")
+        Check("hundred percent", "en-US", "100", "100", "$100.00", "$0.00", "")
+        Check("zero price", "en-US", "0", "50", "$0.00", "$0.00", "")
+        Check("discount midpoint", "en-US", "0.05", "10", "$0.01", "$0.04", "")
+        Check("price midpoint first", "en-US", "1.005", "50", "$0.51", "$0.50", "")
+        Check("negative price", "en-US", "-1", "20", "", "", "price cannot be negative")
+        Check("negative percentage", "en-US", "100", "-1", "", "", "between 0 and 100")
+        Check("over 100 percentage", "en-US", "100", "100.01", "", "", "between 0 and 100")
+        Check("nan", "en-US", "NaN", "1", "", "", "valid numbers")
+        Check("infinity", "en-US", "100", "Infinity", "", "", "valid numbers")
+        Check("empty", "en-US", "", "1", "", "", "valid numbers")
+        Check("nonnumeric", "en-US", "abc", "20", "", "", "valid numbers")
+        Check("no grouping", "en-US", "1,000", "20", "", "", "valid numbers")
+        Check("no exponent", "en-US", "1e2", "20", "", "", "valid numbers")
+        Check("too many digits", "en-US", "12345678901234567890123456789", "20", "", "", "no more than 28 digits")
+        Check("precision boundary", "en-US", "1", "100.00000000000000000000000001", "", "", "no more than 28 digits")
+        Check("culture decimal", "de-DE", "100,50", "20", "20,10 €", "80,40 €", "")
+        Check("maximum price", "en-US", "999999999999999999.99", "50", "$500,000,000,000,000,000.00", "$499,999,999,999,999,999.99", "")
+        Check("price too large", "en-US", "9999999999999999999999999999", "50", "", "", "price is too large")
+        Check("percentage precision valid", "en-US", "100", "1.2345", "$1.23", "$98.77", "")
+        Check("percentage precision excessive", "en-US", "100", "1.23456", "", "", "four decimal places")
+        Console.WriteLine($"RESULT: {passed} passed, {failed} failed")
+        If failed > 0 Then Environment.Exit(1)
+    End Sub
+End Module
